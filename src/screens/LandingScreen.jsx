@@ -1,58 +1,109 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHeart, faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { faHeart, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { supabase } from '../lib/supabase'
+import { detectVPNAndCountry } from '../lib/vpnDetection'
+import { getCurrencyForCountry } from '../lib/currencyMapping'
 import '../index.css'
 
 export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
   const [sendAmount, setSendAmount] = useState('1')
-  const [sendCurrency, setSendCurrency] = useState('USD')
-  const [showSendDropdown, setShowSendDropdown] = useState(false)
+  const [sendCurrency, setSendCurrency] = useState(null)
+  const [userCountryCode, setUserCountryCode] = useState(null)
+  const [userCountry, setUserCountry] = useState(null)
+  const [currencyName, setCurrencyName] = useState('')
+  const [currencyFlag, setCurrencyFlag] = useState('')
+  const [rates, setRates] = useState({}) // Store rates for all currencies
+  const [isLoadingRate, setIsLoadingRate] = useState(true)
   
   // Receiving currency is always Bangladesh (BDT)
   const receiveCurrency = 'BDT'
-  
-  // Exchange rates to BDT (Bangladeshi Taka)
-  // Approximate rates - in real app, these would come from an API
-  const exchangeRates = {
-    'USD': 110,      // 1 USD = 110 BDT
-    'EUR': 120,      // 1 EUR = 120 BDT
-    'GBP': 140,      // 1 GBP = 140 BDT
-    'AED': 30,       // 1 AED = 30 BDT (UAE Dirham)
-    'SAR': 29,       // 1 SAR = 29 BDT (Saudi Riyal)
-    'QAR': 30,       // 1 QAR = 30 BDT (Qatari Riyal)
-    'KWD': 360,      // 1 KWD = 360 BDT (Kuwaiti Dinar)
-    'OMR': 285,      // 1 OMR = 285 BDT (Omani Rial)
-    'BHD': 290,      // 1 BHD = 290 BDT (Bahraini Dinar)
-    'CHF': 125,      // 1 CHF = 125 BDT (Swiss Franc)
-    'SEK': 10.5,     // 1 SEK = 10.5 BDT (Swedish Krona)
-    'NOK': 10.2,     // 1 NOK = 10.2 BDT (Norwegian Krone)
-    'DKK': 16,       // 1 DKK = 16 BDT (Danish Krone)
-    'PLN': 28,       // 1 PLN = 28 BDT (Polish Zloty)
+
+  // Currency mapping with flags and names
+  const currencyInfo = {
+    'AED': { flag: '🇦🇪', name: 'UAE Dirham' },
+    'SAR': { flag: '🇸🇦', name: 'Saudi Riyal' },
+    'QAR': { flag: '🇶🇦', name: 'Qatari Riyal' },
+    'KWD': { flag: '🇰🇼', name: 'Kuwaiti Dinar' },
+    'OMR': { flag: '🇴🇲', name: 'Omani Rial' },
+    'BHD': { flag: '🇧🇭', name: 'Bahraini Dinar' },
+    'EUR': { flag: '🇪🇺', name: 'Euro' },
+    'GBP': { flag: '🇬🇧', name: 'British Pound' },
+    'CHF': { flag: '🇨🇭', name: 'Swiss Franc' },
+    'SEK': { flag: '🇸🇪', name: 'Swedish Krona' },
+    'NOK': { flag: '🇳🇴', name: 'Norwegian Krone' },
+    'DKK': { flag: '🇩🇰', name: 'Danish Krone' },
+    'PLN': { flag: '🇵🇱', name: 'Polish Zloty' },
+    'USD': { flag: '🇺🇸', name: 'US Dollar' },
+    'CAD': { flag: '🇨🇦', name: 'Canadian Dollar' },
+    'AUD': { flag: '🇦🇺', name: 'Australian Dollar' },
+    'JPY': { flag: '🇯🇵', name: 'Japanese Yen' },
+    'CNY': { flag: '🇨🇳', name: 'Chinese Yuan' },
+    'INR': { flag: '🇮🇳', name: 'Indian Rupee' },
+    'PKR': { flag: '🇵🇰', name: 'Pakistani Rupee' },
   }
 
-  // Middle East and European countries
-  const sendingCurrencies = [
-    // Middle East
-    { code: 'AED', flag: '🇦🇪', name: 'UAE Dirham' },
-    { code: 'SAR', flag: '🇸🇦', name: 'Saudi Riyal' },
-    { code: 'QAR', flag: '🇶🇦', name: 'Qatari Riyal' },
-    { code: 'KWD', flag: '🇰🇼', name: 'Kuwaiti Dinar' },
-    { code: 'OMR', flag: '🇴🇲', name: 'Omani Rial' },
-    { code: 'BHD', flag: '🇧🇭', name: 'Bahraini Dinar' },
-    // Europe
-    { code: 'EUR', flag: '🇪🇺', name: 'Euro' },
-    { code: 'GBP', flag: '🇬🇧', name: 'British Pound' },
-    { code: 'CHF', flag: '🇨🇭', name: 'Swiss Franc' },
-    { code: 'SEK', flag: '🇸🇪', name: 'Swedish Krona' },
-    { code: 'NOK', flag: '🇳🇴', name: 'Norwegian Krone' },
-    { code: 'DKK', flag: '🇩🇰', name: 'Danish Krone' },
-    { code: 'PLN', flag: '🇵🇱', name: 'Polish Zloty' },
-    // Also include USD as it's commonly used
-    { code: 'USD', flag: '🇺🇸', name: 'US Dollar' },
-  ]
+  // Detect user's location and fetch rates on mount
+  useEffect(() => {
+    detectLocationAndFetchRates()
+  }, [])
 
-  const currentRate = exchangeRates[sendCurrency] || 110
-  const receiveAmount = (parseFloat(sendAmount) || 0) * currentRate
+  const detectLocationAndFetchRates = async () => {
+    try {
+      setIsLoadingRate(true)
+      
+      // Detect user's country using VPN API
+      const locationData = await detectVPNAndCountry()
+      
+      if (locationData && locationData.countryCode) {
+        setUserCountryCode(locationData.countryCode)
+        setUserCountry(locationData.country || 'Unknown')
+        
+        // Get currency for the detected country
+        const detectedCurrency = getCurrencyForCountry(locationData.countryCode)
+        
+        // Set the currency and its display info
+        setSendCurrency(detectedCurrency)
+        const currencyData = currencyInfo[detectedCurrency] || { flag: '💱', name: detectedCurrency }
+        setCurrencyFlag(currencyData.flag)
+        setCurrencyName(currencyData.name)
+        
+        // Fetch rate for user's country from Supabase
+        const { data: rateData, error: rateError } = await supabase
+          .from('rates')
+          .select('company_rate, original_rate')
+          .eq('country_code', locationData.countryCode)
+          .single()
+
+        if (!rateError && rateData && rateData.company_rate) {
+          // Store the rate for user's currency
+          const userRate = parseFloat(rateData.company_rate)
+          console.log(`Fetched rate for ${detectedCurrency} (${locationData.countryCode}):`, userRate)
+          setRates(prev => ({
+            ...prev,
+            [detectedCurrency]: userRate
+          }))
+        } else {
+          console.warn(`Rate not found for country ${locationData.countryCode} (${detectedCurrency}):`, rateError)
+        }
+      } else {
+        console.warn('Could not detect user location')
+      }
+    } catch (error) {
+      console.error('Error detecting location or fetching rates:', error)
+    } finally {
+      setIsLoadingRate(false)
+    }
+  }
+
+
+  // Get current rate - only use fetched rate from Supabase
+  const getCurrentRate = () => {
+    return rates[sendCurrency] || null
+  }
+
+  const currentRate = getCurrentRate()
+  const receiveAmount = currentRate ? (parseFloat(sendAmount) || 0) * currentRate : 0
 
   const formatReceiveAmount = (amount) => {
     return parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -62,31 +113,6 @@ export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
     if (!amount || amount === '') return ''
     return parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
-
-  const dropdownRef = useRef(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowSendDropdown(false)
-      }
-    }
-
-    if (showSendDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showSendDropdown])
-
-  const handleCurrencySelect = (currency) => {
-    setSendCurrency(currency.code)
-    setShowSendDropdown(false)
-  }
-
-  const selectedCurrency = sendingCurrencies.find(c => c.code === sendCurrency) || sendingCurrencies[0]
 
   return (
     <div className="landing-screen">
@@ -128,33 +154,28 @@ export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
               placeholder="0"
               step="0.01"
               min="0"
+              disabled={!sendCurrency}
             />
-            <div className="currency-selector-wrapper" ref={dropdownRef}>
-              <div 
-                className="currency-selector"
-                onClick={() => setShowSendDropdown(!showSendDropdown)}
-              >
-                <span className="currency-flag">{selectedCurrency.flag}</span>
-                <span className="currency-code">{sendCurrency}</span>
-                <FontAwesomeIcon icon={faChevronDown} className={`chevron-icon ${showSendDropdown ? 'open' : ''}`} />
-              </div>
-              {showSendDropdown && (
-                <div className="currency-dropdown">
-                  {sendingCurrencies.map((currency) => (
-                    <div
-                      key={currency.code}
-                      className={`currency-option ${sendCurrency === currency.code ? 'selected' : ''}`}
-                      onClick={() => handleCurrencySelect(currency)}
-                    >
-                      <span className="currency-flag">{currency.flag}</span>
-                      <span className="currency-name">{currency.name}</span>
-                      <span className="currency-code-small">{currency.code}</span>
-                    </div>
-                  ))}
+            <div className="currency-selector receive-currency" style={{ cursor: 'default', opacity: sendCurrency ? 1 : 0.6 }}>
+              {isLoadingRate ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px' }}>
+                  <FontAwesomeIcon icon={faSpinner} className="fa-spin" style={{ fontSize: '14px' }} />
                 </div>
+              ) : sendCurrency ? (
+                <>
+                  <span className="currency-flag">{currencyFlag}</span>
+                  <span className="currency-code">{sendCurrency}</span>
+                </>
+              ) : (
+                <span className="currency-code" style={{ fontSize: '14px' }}>Detecting...</span>
               )}
             </div>
           </div>
+          {sendCurrency && userCountry && (
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', paddingLeft: '4px' }}>
+              Based on your location: {userCountry}
+            </div>
+          )}
         </div>
 
         <div className="currency-input-group">
@@ -163,8 +184,9 @@ export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
             <input
               type="text"
               className="currency-input"
-              value={formatReceiveAmount(receiveAmount)}
+              value={currentRate ? formatReceiveAmount(receiveAmount) : '0'}
               readOnly
+              placeholder={currentRate ? '' : 'Rate not available'}
             />
             <div className="currency-selector receive-currency">
               <span className="currency-flag">🇧🇩</span>
@@ -174,7 +196,24 @@ export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
         </div>
 
         <div className="exchange-rate">
-          Exchange rate: 1 {sendCurrency} = {receiveCurrency} {currentRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {isLoadingRate ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+              <FontAwesomeIcon icon={faSpinner} className="fa-spin" style={{ fontSize: '14px' }} />
+              <span>Loading exchange rate...</span>
+            </div>
+          ) : currentRate && sendCurrency ? (
+            <>
+              Exchange rate: 1 {sendCurrency} = {receiveCurrency} {currentRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </>
+          ) : sendCurrency ? (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              Rate not available for {sendCurrency}. Please try again later.
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              Detecting your location...
+            </div>
+          )}
         </div>
       </div>
 
