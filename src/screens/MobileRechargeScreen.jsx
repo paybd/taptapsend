@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faArrowLeft,
-  faMobileScreenButton,
   faCheckCircle,
   faSpinner,
   faLock,
   faPhone
 } from '@fortawesome/free-solid-svg-icons'
 import { supabase } from '../lib/supabase'
+import Toast from '../components/Toast'
 import '../index.css'
 
 export default function MobileRechargeScreen({ onBack }) {
@@ -48,10 +48,10 @@ export default function MobileRechargeScreen({ onBack }) {
   }
 
   const operators = [
-    { id: 'grameenphone', label: 'Grameenphone', shortLabel: 'GP' },
-    { id: 'robi', label: 'Robi', shortLabel: 'Robi' },
-    { id: 'banglalink', label: 'Banglalink', shortLabel: 'BL' },
-    { id: 'teletalk', label: 'Teletalk', shortLabel: 'TT' },
+    { id: 'grameenphone', label: 'GP', shortLabel: 'GP', icon: '/icons/gp.png', prefixes: ['017', '013'] },
+    { id: 'robi', label: 'Robi', shortLabel: 'Robi', icon: '/icons/robi.png', prefixes: ['018', '016'] },
+    { id: 'banglalink', label: 'Banglalink', shortLabel: 'BL', icon: '/icons/banglalink.png', prefixes: ['019', '014'] },
+    { id: 'teletalk', label: 'Teletalk', shortLabel: 'TT', icon: '/icons/teletalk.png', prefixes: ['015'] },
   ]
 
   const handleOperatorSelect = (operatorId) => {
@@ -69,20 +69,39 @@ export default function MobileRechargeScreen({ onBack }) {
       return
     }
     
+    // Validate operator-specific prefix
+    if (selectedOperator) {
+      const selectedOperatorData = operators.find(op => op.id === selectedOperator)
+      if (selectedOperatorData && selectedOperatorData.prefixes) {
+        const phonePrefix = cleanedPhone.substring(0, 3)
+        if (!selectedOperatorData.prefixes.includes(phonePrefix)) {
+          const prefixList = selectedOperatorData.prefixes.join(', ')
+          setError(`Phone number must start with ${prefixList} for ${selectedOperatorData.label}`)
+          return
+        }
+      }
+    }
+    
     setStep(3)
     setError('')
   }
 
   const handleAmountNext = () => {
-    const rechargeAmount = parseFloat(amount)
+    const rechargeAmount = parseInt(amount, 10)
     if (isNaN(rechargeAmount) || rechargeAmount <= 0) {
       setError('Please enter a valid amount')
       return
     }
     
-    // Minimum recharge amount is typically 10 BDT
-    if (rechargeAmount < 10) {
-      setError('Minimum recharge amount is 10 BDT')
+    // Minimum recharge amount is 50
+    if (rechargeAmount < 50) {
+      setError('Minimum recharge amount is 50')
+      return
+    }
+    
+    // Check if amount is a whole number
+    if (rechargeAmount !== parseFloat(amount)) {
+      setError('Amount must be a whole number')
       return
     }
     
@@ -213,9 +232,9 @@ export default function MobileRechargeScreen({ onBack }) {
           user_id: user.id,
           type: 'mobile_recharge',
           mfs_service: selectedOperator,
-          account_type: cleanedPhone, // Store phone number in account_type field
+          phone: cleanedPhone, // Store phone number in phone field
           amount: transactionAmount,
-          commission: commission,
+          commission: Math.round(commission), // Store commission as integer
           status: 'pending'
         })
 
@@ -228,12 +247,9 @@ export default function MobileRechargeScreen({ onBack }) {
         throw new Error(`Failed to create transaction: ${transactionError.message}`)
       }
 
-      setSuccess(true)
-      
-      // Navigate to home screen after 2 seconds
-      setTimeout(() => {
-        onBack()
-      }, 2000)
+      // Store success message in localStorage and navigate immediately
+      localStorage.setItem('transactionSuccess', 'Mobile recharge request submitted successfully!')
+      onBack()
     } catch (error) {
       console.error('Error processing transaction:', error)
       setError(error.message || 'Failed to process transaction. Please try again.')
@@ -244,7 +260,12 @@ export default function MobileRechargeScreen({ onBack }) {
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1)
+      // Reset to initial step (step 1) from any step
+      setStep(1)
+      setSelectedOperator('')
+      setPhoneNumber('')
+      setAmount('')
+      setPin(['', '', '', ''])
       setError('')
     } else {
       onBack()
@@ -273,6 +294,14 @@ export default function MobileRechargeScreen({ onBack }) {
 
   return (
     <div className="deposit-screen">
+      {/* Full Screen Loader */}
+      {isSubmitting && (
+        <div className="full-screen-loader">
+          <div className="loader-spinner"></div>
+          <div className="loader-text">Processing your request...</div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="deposit-header">
         <button className="back-btn" onClick={handleBack}>
@@ -284,17 +313,11 @@ export default function MobileRechargeScreen({ onBack }) {
 
       {/* Content */}
       <div className="deposit-content">
-        {error && (
-          <div className="error-message-box">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="success-message-box">
-            Recharge request submitted successfully!
-          </div>
-        )}
+        <Toast 
+          message={error} 
+          type="error" 
+          onClose={() => setError('')} 
+        />
 
         {/* Step 1: Select Operator */}
         {step === 1 && (
@@ -307,7 +330,7 @@ export default function MobileRechargeScreen({ onBack }) {
                   className={`mfs-card ${selectedOperator === operator.id ? 'selected' : ''}`}
                   onClick={() => handleOperatorSelect(operator.id)}
                 >
-                  <FontAwesomeIcon icon={faMobileScreenButton} className="mfs-icon" />
+                  <img src={operator.icon} alt={operator.label} className="mfs-icon-img" />
                   <span className="mfs-label">{operator.label}</span>
                 </button>
               ))}
@@ -318,6 +341,16 @@ export default function MobileRechargeScreen({ onBack }) {
         {/* Step 2: Enter Phone Number */}
         {step === 2 && (
           <div className="amount-input-section">
+            {/* Show selected Operator */}
+            {selectedOperator && (() => {
+              const selectedOperatorData = operators.find(op => op.id === selectedOperator)
+              return selectedOperatorData ? (
+                <div className="selected-mfs-display" style={{ marginBottom: '24px' }}>
+                  <img src={selectedOperatorData.icon} alt={selectedOperatorData.label} className="selected-mfs-icon" />
+                  <span className="selected-mfs-label">{selectedOperatorData.label}</span>
+                </div>
+              ) : null
+            })()}
             <p className="step-description">Enter the mobile number to recharge</p>
             <div className="form-group">
               <label className="form-label">Phone Number</label>
@@ -338,7 +371,14 @@ export default function MobileRechargeScreen({ onBack }) {
                 />
               </div>
               <small style={{ color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                Enter 11-digit Bangladesh mobile number
+                {selectedOperator ? (() => {
+                  const selectedOperatorData = operators.find(op => op.id === selectedOperator)
+                  if (selectedOperatorData && selectedOperatorData.prefixes) {
+                    const prefixList = selectedOperatorData.prefixes.join(', ')
+                    return `Enter 11-digit ${selectedOperatorData.label} number (starting with ${prefixList})`
+                  }
+                  return 'Enter 11-digit Bangladesh mobile number'
+                })() : 'Enter 11-digit Bangladesh mobile number'}
               </small>
             </div>
             <button className="btn-primary" onClick={handlePhoneNext}>
@@ -350,45 +390,57 @@ export default function MobileRechargeScreen({ onBack }) {
         {/* Step 3: Enter Amount */}
         {step === 3 && (
           <div className="amount-input-section">
+            {/* Show selected Operator and Phone Number at the top */}
+            {selectedOperator && phoneNumber && (() => {
+              const selectedOperatorData = operators.find(op => op.id === selectedOperator)
+              return selectedOperatorData ? (
+                <div style={{ 
+                  background: 'var(--card-bg)', 
+                  padding: '16px', 
+                  borderRadius: '12px', 
+                  marginBottom: '24px',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <img src={selectedOperatorData.icon} alt={selectedOperatorData.label} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '2px' }}>Operator</div>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{selectedOperatorData.label}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--text-secondary)', fontSize: '16px' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '2px' }}>Phone Number</div>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{phoneNumber.replace(/\D/g, '')}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : null
+            })()}
             <p className="step-description">Enter recharge amount</p>
-            <div style={{ 
-              background: 'var(--card-bg)', 
-              padding: '16px', 
-              borderRadius: '12px', 
-              marginBottom: '16px',
-              border: '1px solid var(--border-color)'
-            }}>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                Operator
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                {getSelectedOperatorLabel()}
-              </div>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '12px', marginBottom: '4px' }}>
-                Phone Number
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                {phoneNumber.replace(/\D/g, '')}
-              </div>
-            </div>
             <div className="form-group">
               <label className="form-label">Amount ({userCurrency})</label>
               <input
                 type="number"
                 className="form-input"
-                placeholder="0.00"
+                placeholder="0"
                 value={amount}
                 onChange={(e) => {
-                  setAmount(e.target.value)
-                  setError('')
+                  const value = e.target.value
+                  // Only allow whole numbers
+                  if (value === '' || /^\d+$/.test(value)) {
+                    setAmount(value)
+                    setError('')
+                  }
                 }}
-                min="10"
-                step="0.01"
+                min="50"
+                step="1"
                 required
                 autoFocus
               />
               <small style={{ color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                Minimum recharge amount is 10 {userCurrency}
+                Minimum recharge amount is 50 {userCurrency}
               </small>
             </div>
             <button className="btn-primary" onClick={handleAmountNext}>
@@ -421,15 +473,11 @@ export default function MobileRechargeScreen({ onBack }) {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Amount:</span>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{parseFloat(amount).toFixed(2)} {userCurrency}</span>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{parseInt(amount, 10) || 0} {userCurrency}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Commission (2.5%):</span>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{(parseFloat(amount) * 0.025).toFixed(2)} {userCurrency}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>Total:</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--primary)' }}>{(parseFloat(amount) * 1.025).toFixed(2)} {userCurrency}</span>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{((parseInt(amount, 10) || 0) * 0.025).toFixed(2)} {userCurrency}</span>
               </div>
             </div>
             <div className="pin-input-container">

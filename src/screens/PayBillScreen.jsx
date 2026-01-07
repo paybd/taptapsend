@@ -267,7 +267,7 @@ export default function PayBillScreen({ onBack }) {
           account_type: providerLabel, // Store provider in account_type field
           bank_name: accountNumber.trim(), // Store account number in bank_name field
           amount: transactionAmount,
-          commission: commission,
+          commission: Math.round(commission), // Store commission as integer
           status: 'pending'
         })
 

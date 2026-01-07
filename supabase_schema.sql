@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   type TEXT NOT NULL, -- 'mobile_banking', 'bank_transfer', 'mobile_recharge', 'pay_bill', etc.
   mfs_service TEXT, -- 'bkash', 'nagad', 'rocket' (for mobile_banking type)
   account_type TEXT, -- 'agent', 'personal' (for mobile_banking type)
+  phone TEXT, -- Phone number for mobile_recharge type
   last_digit TEXT, -- Last digits of PIN/account for mobile_banking type
   bank_name TEXT, -- Bank name for bank_transfer type
   recipient_account_number TEXT, -- Recipient account number for bank_transfer
@@ -201,6 +202,25 @@ ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
 -- Create trigger to automatically update updated_at for transactions
 CREATE TRIGGER update_transactions_updated_at
   BEFORE UPDATE ON transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Create banners table for TapTapSend
+-- This table stores carousel banner images for the home screen
+
+CREATE TABLE IF NOT EXISTS banners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_url TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Disable Row Level Security (RLS) for this table
+ALTER TABLE banners DISABLE ROW LEVEL SECURITY;
+
+-- Create trigger to automatically update updated_at for banners
+CREATE TRIGGER update_banners_updated_at
+  BEFORE UPDATE ON banners
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 

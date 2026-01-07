@@ -12,6 +12,7 @@ import MobileBankingScreen from './screens/MobileBankingScreen'
 import BankTransferScreen from './screens/BankTransferScreen'
 import MobileRechargeScreen from './screens/MobileRechargeScreen'
 import PayBillScreen from './screens/PayBillScreen'
+import CustomerCareScreen from './screens/CustomerCareScreen'
 import TransactionsScreen from './screens/TransactionsScreen'
 import ScanScreen from './screens/ScanScreen'
 import OffersScreen from './screens/OffersScreen'
@@ -213,13 +214,13 @@ export default function App() {
     // If on a deposit screen, go back to add-money screen
     if (currentScreen === 'bkash-deposit' || currentScreen === 'bank-deposit' || currentScreen === 'card-deposit') {
       setCurrentScreen('add-money')
-    } else if (currentScreen === 'mobile-banking' || currentScreen === 'bank-transfer' || currentScreen === 'mobile-recharge' || currentScreen === 'pay-bill') {
-      // Go back to home from transaction screens
+    } else if (currentScreen === 'mobile-banking' || currentScreen === 'bank-transfer' || currentScreen === 'mobile-recharge' || currentScreen === 'pay-bill' || currentScreen === 'customer-care') {
+      // Go back to home from transaction screens and customer care
       setCurrentScreen(null)
     } else {
       // Otherwise go back to home
       setCurrentScreen(null)
-    }
+}
   }
 
   // Show main app with tabs if logged in
@@ -255,6 +256,11 @@ export default function App() {
       return <PayBillScreen onBack={handleBack} />
     }
     
+    // Show Customer Care Screen
+    if (currentScreen === 'customer-care') {
+      return <CustomerCareScreen onBack={handleBack} />
+    }
+    
     // Show AddMoneyScreen
     if (currentScreen === 'add-money') {
       return <AddMoneyScreen onBack={handleBack} onNavigate={handleNavigate} />
@@ -263,7 +269,7 @@ export default function App() {
     // Then show tab-based screens
     switch (activeTab) {
       case 'home':
-        return <HomeScreen onNavigate={handleNavigate} />
+        return <HomeScreen onNavigate={handleNavigate} onTabChange={setActiveTab} />
       case 'transactions':
         return <TransactionsScreen />
       case 'scan':

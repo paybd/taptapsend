@@ -455,14 +455,14 @@ export default function TransactionsScreen() {
                       To: {item.recipient_account_name || item.recipient_account_number}
                     </div>
                   )}
-                  {item.itemType === 'transaction' && item.type === 'mobile_recharge' && item.account_type && (
+                  {item.itemType === 'transaction' && item.type === 'mobile_recharge' && item.phone && (
                     <div style={{ 
                       fontSize: '12px', 
                       color: 'var(--text-secondary)',
                       marginTop: '4px',
                       opacity: 0.8
                     }}>
-                      Phone: {item.account_type}
+                      Phone: {item.phone}
                     </div>
                   )}
                 </div>
@@ -956,7 +956,7 @@ export default function TransactionsScreen() {
                       </div>
                     </div>
                   )}
-                  {selectedItem.account_type && (
+                  {selectedItem.phone && (
                     <div style={{
                       padding: '12px',
                       background: 'var(--bg-secondary)',
@@ -978,7 +978,7 @@ export default function TransactionsScreen() {
                         fontWeight: '600',
                         color: 'var(--text-primary)'
                       }}>
-                        {selectedItem.account_type}
+                        {selectedItem.phone}
                       </div>
                     </div>
                   )}

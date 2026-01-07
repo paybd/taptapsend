@@ -70,27 +70,39 @@ export default function AddMoneyScreen({ onBack, onNavigate }) {
 
   const depositOptions = [
     {
-      icon: faMobileScreenButton,
+      icon: '/icons/mobile-payment.png',
       label: 'bKash Deposit',
       description: 'Add money from bKash account',
       color: '#166534',
       screen: 'bkash-deposit'
     },
     {
-      icon: faBuildingColumns,
+      icon: '/icons/bank.png',
       label: 'Bank Deposit',
       description: 'Transfer from bank account',
       color: '#166534',
       screen: 'bank-deposit'
     },
     {
-      icon: faCreditCard,
+      icon: '/icons/payment-method.png',
       label: 'Card Deposit',
       description: 'Add money using debit/credit card',
       color: '#166534',
       screen: 'card-deposit'
     }
   ]
+
+  // Show full screen loader while rate is loading
+  if (isLoadingRate) {
+    return (
+      <div className="add-money-screen">
+        <div className="full-screen-loader">
+          <div className="loader-spinner"></div>
+          <div className="loader-text">Loading exchange rate...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="add-money-screen">
@@ -110,12 +122,7 @@ export default function AddMoneyScreen({ onBack, onNavigate }) {
             <FontAwesomeIcon icon={faChartLine} />
             <span className="todays-rate-label">Today's Rate</span>
           </div>
-          {isLoadingRate ? (
-            <div className="todays-rate-loading">
-              <FontAwesomeIcon icon={faSpinner} className="fa-spin" />
-              <span>Loading rate...</span>
-            </div>
-          ) : todayRate ? (
+          {todayRate ? (
             <div className="todays-rate-value">
               <span className="todays-rate-amount">
                 1 {getCurrencyForCountry(userCountryCode)} = {todayRate.toFixed(2)} BDT
@@ -144,7 +151,7 @@ export default function AddMoneyScreen({ onBack, onNavigate }) {
             }}
           >
             <div className="deposit-option-icon">
-              <FontAwesomeIcon icon={option.icon} />
+              <img src={option.icon} alt={option.label} className="deposit-icon-img" />
             </div>
             <div className="deposit-option-content">
               <div className="deposit-option-label">{option.label}</div>

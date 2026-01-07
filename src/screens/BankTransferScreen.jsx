@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faArrowLeft,
-  faBuildingColumns,
   faCheckCircle,
   faSpinner,
   faLock
 } from '@fortawesome/free-solid-svg-icons'
 import { supabase } from '../lib/supabase'
 import { getCurrencyForCountry } from '../lib/currencyMapping'
+import Toast from '../components/Toast'
 import '../index.css'
 
 // List of all Bangladesh banks with bKash support flag
@@ -82,6 +82,28 @@ const BANGLADESH_BANKS = [
   { id: 'commercial-bank-ceylon', name: 'Commercial Bank of Ceylon', code: 'CBC', supportsBkash: false },
 ].sort((a, b) => a.name.localeCompare(b.name))
 
+// Map bank IDs to icon paths
+const getBankIcon = (bankId) => {
+  const iconMap = {
+    'sonali': '/icons/sonali.png',
+    'agrani': '/icons/agrani.png',
+    'brac': '/icons/brac.png',
+    'dbbl': '/icons/dutch.png',
+    'city': '/icons/city.png',
+    'islami': '/icons/islami.jpg',
+    'ucbl': '/icons/ucb.jpg',
+    'pubali': '/icons/pubali-bank-seeklogo.png',
+    'one': '/icons/one.png',
+    'jamuna': '/icons/jamuna.jpg',
+    'krishi': '/icons/krishi.png',
+    'rupali': '/icons/rupali.png',
+    'mutual': '/icons/mtb.jpg',
+    'prime': '/icons/prime.jpg',
+    'bankasia': '/icons/asia.png',
+  }
+  return iconMap[bankId] || '/icons/bank.png'
+}
+
 export default function BankTransferScreen({ onBack }) {
   const [step, setStep] = useState(1) // 1: Select Bank, 2: Enter Account Details, 3: Enter Amount, 4: Enter PIN
   const [selectedBankId, setSelectedBankId] = useState('')
@@ -139,7 +161,7 @@ export default function BankTransferScreen({ onBack }) {
   }
 
   const handleAmountNext = () => {
-    const transferAmount = parseFloat(amount)
+    const transferAmount = parseInt(amount, 10)
     if (isNaN(transferAmount) || transferAmount <= 0) {
       setError('Please enter a valid amount')
       return
@@ -150,6 +172,12 @@ export default function BankTransferScreen({ onBack }) {
 
     if (transferAmount < minimumAmount) {
       setError(`Minimum transfer amount is ${minimumAmount.toLocaleString()} ${userCurrency} for ${selectedBank?.name || 'this bank'}`)
+      return
+    }
+
+    // Check if amount is a whole number
+    if (transferAmount !== parseFloat(amount)) {
+      setError('Amount must be a whole number')
       return
     }
 
@@ -233,7 +261,7 @@ export default function BankTransferScreen({ onBack }) {
       }
 
       // PIN matches, check and deduct balance
-      const transferAmount = parseFloat(amount)
+      const transferAmount = parseInt(amount, 10)
       
       // Calculate 2.5% commission
       const commission = transferAmount * 0.025
@@ -273,7 +301,7 @@ export default function BankTransferScreen({ onBack }) {
           recipient_account_number: accountNumber.trim(),
           recipient_account_name: accountName.trim(),
           amount: transferAmount,
-          commission: commission,
+          commission: Math.round(commission), // Store commission as integer
           status: 'pending'
         })
 
@@ -286,12 +314,9 @@ export default function BankTransferScreen({ onBack }) {
         throw new Error(`Failed to create transaction: ${transactionError.message}`)
       }
 
-      setSuccess(true)
-      
-      // Navigate to home screen after 2 seconds
-      setTimeout(() => {
-        onBack()
-      }, 2000)
+      // Store success message in localStorage and navigate immediately
+      localStorage.setItem('transactionSuccess', 'Bank transfer request submitted successfully!')
+      onBack()
     } catch (error) {
       console.error('Error processing transfer:', error)
       setError(error.message || 'Failed to process transfer. Please try again.')
@@ -302,7 +327,13 @@ export default function BankTransferScreen({ onBack }) {
 
   const handleBack = () => {
     if (step > 1) {
-      setStep(step - 1)
+      // Reset to initial step (step 1) from any step
+      setStep(1)
+      setSelectedBankId('')
+      setAccountNumber('')
+      setAccountName('')
+      setAmount('')
+      setPin(['', '', '', ''])
       setError('')
     } else {
       onBack()
@@ -326,6 +357,14 @@ export default function BankTransferScreen({ onBack }) {
 
   return (
     <div className="deposit-screen">
+      {/* Full Screen Loader */}
+      {isSubmitting && (
+        <div className="full-screen-loader">
+          <div className="loader-spinner"></div>
+          <div className="loader-text">Processing your request...</div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="deposit-header">
         <button className="back-btn" onClick={handleBack}>
@@ -337,17 +376,11 @@ export default function BankTransferScreen({ onBack }) {
 
       {/* Content */}
       <div className="deposit-content">
-        {error && (
-          <div className="error-message-box">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="success-message-box">
-            Transfer completed successfully!
-          </div>
-        )}
+        <Toast 
+          message={error} 
+          type="error" 
+          onClose={() => setError('')} 
+        />
 
         {/* Step 1: Select Bank */}
         {step === 1 && (
@@ -361,7 +394,7 @@ export default function BankTransferScreen({ onBack }) {
                   onClick={() => handleBankSelect(bank.id)}
                 >
                   <div className="bank-button-icon">
-                    <FontAwesomeIcon icon={faBuildingColumns} />
+                    <img src={getBankIcon(bank.id)} alt={bank.name} className="bank-icon-img" />
                   </div>
                   <div className="bank-button-content">
                     <div className="bank-button-name">{bank.name}</div>
@@ -376,15 +409,25 @@ export default function BankTransferScreen({ onBack }) {
         {/* Step 2: Enter Account Details */}
         {step === 2 && selectedBank && (
           <div className="account-details-section">
-            <p className="step-description">Enter recipient account details</p>
-            
-            <div className="bank-info-display" style={{ marginBottom: '24px' }}>
-              <div className="bank-info-row">
-                <span className="bank-info-label">Selected Bank:</span>
-                <span className="bank-info-value">{selectedBank.name}</span>
+            {/* Show selected Bank */}
+            {selectedBank && (
+              <div style={{ 
+                background: 'var(--card-bg)', 
+                padding: '16px', 
+                borderRadius: '12px', 
+                marginBottom: '24px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img src={getBankIcon(selectedBank.id)} alt={selectedBank.name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '2px' }}>Selected Bank</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{selectedBank.name}</div>
+                  </div>
+                </div>
               </div>
-            </div>
-
+            )}
+            <p className="step-description">Enter recipient account details</p>
                 <div className="form-group">
                   <label className="form-label">Account Number</label>
                   <input
@@ -396,6 +439,8 @@ export default function BankTransferScreen({ onBack }) {
                       setAccountNumber(e.target.value)
                       setError('')
                     }}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     autoFocus
                   />
@@ -425,38 +470,56 @@ export default function BankTransferScreen({ onBack }) {
         {/* Step 3: Enter Amount */}
         {step === 3 && selectedBank && (
           <div className="amount-input-section">
+            {/* Show selected Bank and Recipient Details */}
+            {selectedBank && accountNumber && accountName && (
+              <div style={{ 
+                background: 'var(--card-bg)', 
+                padding: '16px', 
+                borderRadius: '12px', 
+                marginBottom: '24px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                  <img src={getBankIcon(selectedBank.id)} alt={selectedBank.name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '2px' }}>Bank</div>
+                    <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{selectedBank.name}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid var(--border-color)', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Account Number:</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{accountNumber}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Account Name:</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{accountName}</span>
+                </div>
+              </div>
+            )}
             <p className="step-description">Enter transfer amount</p>
-            <div className="bank-info-display" style={{ marginBottom: '20px' }}>
-              <div className="bank-info-row">
-                <span className="bank-info-label">Selected Bank:</span>
-                <span className="bank-info-value">{selectedBank.name}</span>
-              </div>
-              <div className="bank-info-row">
-                <span className="bank-info-label">Minimum Amount:</span>
-                <span className="bank-info-value">
-                  {selectedBank.supportsBkash ? '5,000' : '25,000'} {userCurrency}
-                </span>
-              </div>
-            </div>
             <div className="form-group">
               <label className="form-label">Amount ({userCurrency})</label>
               <input
                 type="number"
                 className="form-input"
-                placeholder="0.00"
+                placeholder="0"
                 value={amount}
                 onChange={(e) => {
-                  setAmount(e.target.value)
-                  setError('')
+                  const value = e.target.value
+                  // Only allow whole numbers
+                  if (value === '' || /^\d+$/.test(value)) {
+                    setAmount(value)
+                    setError('')
+                  }
                 }}
                 min={selectedBank.supportsBkash ? 5000 : 25000}
-                step="0.01"
+                step="1"
                 required
                 autoFocus
               />
-              <div className="form-hint">
+              <small style={{ color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
                 Minimum: {selectedBank.supportsBkash ? '5,000' : '25,000'} {userCurrency}
-              </div>
+              </small>
             </div>
             <button className="btn-primary" onClick={handleAmountNext}>
               Continue
@@ -471,6 +534,45 @@ export default function BankTransferScreen({ onBack }) {
               <FontAwesomeIcon icon={faLock} className="pin-icon" />
               <p className="step-description">Enter your 4-digit PIN to confirm</p>
             </div>
+            {/* Transaction Summary */}
+            {selectedBank && accountNumber && accountName && amount && (() => {
+              const transferAmount = parseInt(amount, 10) || 0
+              const commission = transferAmount * 0.025
+              
+              return (
+                <div style={{ 
+                  background: 'var(--card-bg)', 
+                  padding: '16px', 
+                  borderRadius: '12px', 
+                  marginBottom: '24px',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <img src={getBankIcon(selectedBank.id)} alt={selectedBank.name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '2px' }}>Bank</div>
+                      <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{selectedBank.name}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Account Number:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{accountNumber}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Account Name:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{accountName}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Amount:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{transferAmount} {userCurrency}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Commission (2.5%):</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{commission.toFixed(2)} {userCurrency}</span>
+                  </div>
+                </div>
+              )
+            })()}
             <div className="pin-input-container">
               {pin.map((digit, index) => (
                 <input

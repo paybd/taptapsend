@@ -6,18 +6,18 @@ import {
   faMobileScreenButton, 
   faCreditCard, 
   faBuildingColumns,
-  faBell,
-  faGear,
   faEye,
   faEyeSlash,
-  faArrowUp,
-  faArrowDown,
-  faArrowsRotate
+  faChevronLeft,
+  faChevronRight,
+  faHeadset
 } from '@fortawesome/free-solid-svg-icons'
 import { supabase } from '../lib/supabase'
+import Toast from '../components/Toast'
 import '../index.css'
 
-export default function HomeScreen({ onNavigate }) {
+export default function HomeScreen({ onNavigate, onTabChange }) {
+  const [successMessage, setSuccessMessage] = useState(null)
   const [balanceVisible, setBalanceVisible] = useState(false)
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -26,10 +26,32 @@ export default function HomeScreen({ onNavigate }) {
   const [balance, setBalance] = useState(0)
   const [firstName, setFirstName] = useState('')
   const [selfieUrl, setSelfieUrl] = useState(null)
+  const [banners, setBanners] = useState([])
+  const [isLoadingBanners, setIsLoadingBanners] = useState(true)
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
 
   useEffect(() => {
     loadUserData()
+    loadBanners()
+    
+    // Check for success message from localStorage
+    const successMsg = localStorage.getItem('transactionSuccess')
+    if (successMsg) {
+      setSuccessMessage(successMsg)
+      localStorage.removeItem('transactionSuccess')
+    }
   }, [])
+
+  // Auto-hide balance after 3 seconds
+  useEffect(() => {
+    if (balanceVisible) {
+      const timer = setTimeout(() => {
+        setBalanceVisible(false)
+      }, 3000) // 3 seconds
+
+      return () => clearTimeout(timer)
+    }
+  }, [balanceVisible])
 
   const loadUserData = async (isRefresh = false) => {
     try {
@@ -68,7 +90,42 @@ export default function HomeScreen({ onNavigate }) {
     }
   }
 
-  const handleRefresh = async () => {
+  const loadBanners = async () => {
+    try {
+      setIsLoadingBanners(true)
+      
+      // Fetch all banners
+      const { data: bannersData, error } = await supabase
+        .from('banners')
+        .select('id, image_url')
+
+      if (error) {
+        console.error('Error loading banners:', error)
+        // Set empty array on error
+        setBanners([])
+      } else if (bannersData && bannersData.length > 0) {
+        // Map the data to match the expected format
+        const formattedBanners = bannersData.map(banner => ({
+          id: banner.id,
+          image: banner.image_url
+        }))
+        setBanners(formattedBanners)
+      } else {
+        // No banners found, set empty array
+        setBanners([])
+      }
+    } catch (error) {
+      console.error('Error loading banners:', error)
+      setBanners([])
+    } finally {
+      setIsLoadingBanners(false)
+    }
+  }
+
+  const handleBalanceToggle = async () => {
+    // Toggle balance visibility
+    setBalanceVisible(!balanceVisible)
+    // Refresh balance data when toggling
     await loadUserData(true)
   }
 
@@ -96,19 +153,51 @@ export default function HomeScreen({ onNavigate }) {
   }
 
   const quickActions = [
-    { icon: faWallet, label: 'Add Money', color: '#166534' },
-    { icon: faPaperPlane, label: 'Mobile Banking', color: '#166534' },
-    { icon: faBuildingColumns, label: 'Bank Transfer', color: '#166534' },
-    { icon: faMobileScreenButton, label: 'Mobile Recharge', color: '#166534' },
-    { icon: faCreditCard, label: 'Pay Bill', color: '#166534' },
+    { icon: '/icons/wallet.png', label: 'Add\nMoney', color: '#166534' },
+    { icon: '/icons/mobile-payment.png', label: 'Mobile\nBanking', color: '#166534' },
+    { icon: '/icons/bank.png', label: 'Bank\nTransfer', color: '#166534' },
+    { icon: '/icons/telephone-call.png', label: 'Mobile\nRecharge', color: '#166534' },
+    { icon: '/icons/payment-method.png', label: 'Pay\nBill', color: '#166534' },
+    { icon: '/icons/support.png', label: 'Customer\nCare', color: '#166534' },
+    { icon: '/icons/lottery.png', label: 'Special\nOffers', color: '#166534' },
+    { icon: '/icons/profile.png', label: 'My\nProfile', color: '#166534' },
   ]
 
-  const recentTransactions = [
-    { id: 1, name: 'John Doe', type: 'sent', amount: 500, date: 'Today', time: '10:30 AM' },
-    { id: 2, name: 'Jane Smith', type: 'received', amount: 1200, date: 'Yesterday', time: '3:45 PM' },
-    { id: 3, name: 'Mobile Recharge', type: 'paid', amount: 200, date: '2 days ago', time: '9:15 AM' },
-    { id: 4, name: 'Electricity Bill', type: 'paid', amount: 850, date: '3 days ago', time: '2:20 PM' },
-  ]
+  // Auto-play carousel (only if banners exist)
+  useEffect(() => {
+    if (banners.length === 0) return
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
+    }, 4000) // Change banner every 4 seconds
+
+    return () => clearInterval(interval)
+  }, [banners.length])
+
+  const goToBanner = (index) => {
+    if (banners.length > 0) {
+      setCurrentBannerIndex(index)
+    }
+  }
+
+  const nextBanner = () => {
+    if (banners.length > 0) {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
+    }
+  }
+
+  const prevBanner = () => {
+    if (banners.length > 0) {
+      setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)
+    }
+  }
+
+  // Reset banner index when banners change
+  useEffect(() => {
+    if (banners.length > 0 && currentBannerIndex >= banners.length) {
+      setCurrentBannerIndex(0)
+    }
+  }, [banners.length, currentBannerIndex])
 
   if (isLoading) {
     return (
@@ -128,6 +217,11 @@ export default function HomeScreen({ onNavigate }) {
 
   return (
     <div className="home-screen">
+      <Toast 
+        message={successMessage} 
+        type="success" 
+        onClose={() => setSuccessMessage(null)} 
+      />
       {/* Balance Card - Fixed */}
       <div className="balance-card">
         <div className="balance-header">
@@ -144,37 +238,22 @@ export default function HomeScreen({ onNavigate }) {
               <div className="balance-status">Active</div>
             </div>
           </div>
-          <div className="balance-header-actions">
-            <button className="icon-btn">
-              <FontAwesomeIcon icon={faBell} />
-            </button>
-            <button className="icon-btn">
-              <FontAwesomeIcon icon={faGear} />
-            </button>
-          </div>
         </div>
         <div className="balance-label-row">
           <span>Available Balance</span>
-          <button 
-            className="eye-btn"
-            onClick={() => setBalanceVisible(!balanceVisible)}
-            title={balanceVisible ? 'Hide balance' : 'Show balance'}
-          >
-            <FontAwesomeIcon icon={balanceVisible ? faEye : faEyeSlash} />
-          </button>
         </div>
         <div className="balance-amount-wrapper">
           <div className="balance-amount">
             {balanceVisible ? `৳${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '৳••••••'}
           </div>
           <button 
-            className="refresh-btn"
-            onClick={handleRefresh}
+            className="eye-btn"
+            onClick={handleBalanceToggle}
             disabled={isRefreshing}
-            title="Refresh balance"
+            title={balanceVisible ? 'Hide balance' : 'Show balance'}
           >
             <FontAwesomeIcon 
-              icon={faArrowsRotate} 
+              icon={balanceVisible ? faEye : faEyeSlash} 
               className={isRefreshing ? 'spinning' : ''}
             />
           </button>
@@ -188,63 +267,104 @@ export default function HomeScreen({ onNavigate }) {
       <div className="home-content">
         {/* Quick Actions */}
         <div className="quick-actions">
-          <h3 className="section-title">Quick Actions</h3>
           <div className="actions-grid">
             {quickActions.map((action, index) => (
-              <button 
-                key={index} 
-                className="action-btn" 
-                style={{ '--action-color': action.color }}
-                onClick={() => {
-                  if (action.label === 'Add Money' && onNavigate) {
-                    onNavigate('add-money')
-                  } else if (action.label === 'Mobile Banking' && onNavigate) {
-                    onNavigate('mobile-banking')
-                  } else if (action.label === 'Bank Transfer' && onNavigate) {
-                    onNavigate('bank-transfer')
-                  } else if (action.label === 'Mobile Recharge' && onNavigate) {
-                    onNavigate('mobile-recharge')
-                  } else if (action.label === 'Pay Bill' && onNavigate) {
-                    onNavigate('pay-bill')
-                  }
-                }}
-              >
-                <span className="action-icon">
-                  <FontAwesomeIcon icon={action.icon} />
-                </span>
+              <div className="action-item-wrapper">
+                <button 
+                  key={index} 
+                  className="action-btn" 
+                  style={{ '--action-color': action.color }}
+                  onClick={() => {
+                    if (action.label === 'Add\nMoney' && onNavigate) {
+                      onNavigate('add-money')
+                    } else if (action.label === 'Mobile\nBanking' && onNavigate) {
+                      onNavigate('mobile-banking')
+                    } else if (action.label === 'Bank\nTransfer' && onNavigate) {
+                      onNavigate('bank-transfer')
+                    } else if (action.label === 'Mobile\nRecharge' && onNavigate) {
+                      onNavigate('mobile-recharge')
+                    } else if (action.label === 'Pay\nBill' && onNavigate) {
+                      onNavigate('pay-bill')
+                    } else if (action.label === 'Customer\nCare' && onNavigate) {
+                      onNavigate('customer-care')
+                    } else if (action.label === 'Offers' && onTabChange) {
+                      onTabChange('offers')
+                    } else if (action.label === 'Profile' && onTabChange) {
+                      onTabChange('profile')
+                    }
+                  }}
+                >
+                  <img src={action.icon} alt={action.label.replace('\n', ' ')} className="action-icon-img" />
+                </button>
                 <span className="action-label">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Transactions */}
-        <div className="transactions-section">
-          <div className="section-header">
-            <h3 className="section-title">Recent Transactions</h3>
-            <button className="view-all-btn">View All</button>
-          </div>
-          <div className="transactions-list">
-            {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="transaction-item">
-                <div className="transaction-icon">
-                  {transaction.type === 'sent' && <FontAwesomeIcon icon={faArrowUp} />}
-                  {transaction.type === 'received' && <FontAwesomeIcon icon={faArrowDown} />}
-                  {transaction.type === 'paid' && <FontAwesomeIcon icon={faCreditCard} />}
-                </div>
-                <div className="transaction-details">
-                  <div className="transaction-name">{transaction.name}</div>
-                  <div className="transaction-meta">
-                    {transaction.date} • {transaction.time}
-                  </div>
-                </div>
-                <div className={`transaction-amount ${transaction.type}`}>
-                  {transaction.type === 'sent' || transaction.type === 'paid' ? '-' : '+'}৳{transaction.amount}
-                </div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Banner Carousel */}
+        {isLoadingBanners ? (
+          <div className="banner-carousel-section">
+            <div className="banner-carousel-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading banners...</div>
+            </div>
+          </div>
+        ) : banners.length > 0 ? (
+          <div className="banner-carousel-section">
+            <div className="banner-carousel-container">
+              <div 
+                className="banner-carousel-track"
+                style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
+              >
+                {banners.map((banner) => (
+                  <div key={banner.id} className="banner-slide">
+                    <img 
+                      src={banner.image} 
+                      alt="Banner"
+                      className="banner-image"
+                      onError={(e) => {
+                        // Fallback to a placeholder if image fails to load
+                        e.target.src = `https://via.placeholder.com/800x400/166534/ffffff?text=Banner`
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              {/* Navigation Arrows - only show if more than 1 banner */}
+              {banners.length > 1 && (
+                <>
+                  <button 
+                    className="banner-nav-btn banner-nav-prev"
+                    onClick={prevBanner}
+                    aria-label="Previous banner"
+                  >
+                    <FontAwesomeIcon icon={faChevronLeft} />
+                  </button>
+                  <button 
+                    className="banner-nav-btn banner-nav-next"
+                    onClick={nextBanner}
+                    aria-label="Next banner"
+                  >
+                    <FontAwesomeIcon icon={faChevronRight} />
+                  </button>
+
+                  {/* Dots Indicator */}
+                  <div className="banner-dots">
+                    {banners.map((_, index) => (
+                      <button
+                        key={index}
+                        className={`banner-dot ${index === currentBannerIndex ? 'active' : ''}`}
+                        onClick={() => goToBanner(index)}
+                        aria-label={`Go to banner ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )
