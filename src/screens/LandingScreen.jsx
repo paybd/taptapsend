@@ -134,7 +134,7 @@ export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
             </svg>
           </div>
         </div>
-        <h1 className="app-title">Taptap Send</h1>
+        <h1 className="app-title">Mcash Remit</h1>
         <div className="no-fees-badge">
           <FontAwesomeIcon icon={faHeart} className="heart-icon" />
           <span>No transfer fees on this transfer</span>

@@ -1566,9 +1566,44 @@ body {
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: var(--shadow-sm);
+}
+
+.profile-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-card-main {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-logout-btn {
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.profile-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.profile-logout-btn:active {
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .profile-avatar {
@@ -1664,34 +1699,21 @@ body {
 
 .profile-kyc-image {
   width: 100%;
-  max-width: 100%;
-  max-height: 400px;
+  max-width: 300px;
+  max-height: 200px;
   object-fit: contain;
   border-radius: 12px;
   border: 2px solid var(--border-color);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  margin: 0 auto;
+  display: block;
   background: var(--bg-secondary);
-}
-
-.profile-kyc-image:hover {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-md);
-}
-
-.profile-kyc-image:active {
-  transform: scale(0.98);
-}
-
-.profile-kyc-hint {
-  font-size: 12px;
-  color: var(--text-light);
-  margin-top: 8px;
-  margin-bottom: 0;
 }
 
 .profile-actions {
   margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .btn-logout {
@@ -1714,6 +1736,183 @@ body {
 .btn-logout:active {
   background: rgba(239, 68, 68, 0.1);
   transform: translateY(1px);
+}
+
+/* PIN Change Modal */
+.pin-change-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.pin-change-modal {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pin-change-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pin-change-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pin-change-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.pin-change-modal-close:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.pin-change-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pin-change-modal-content {
+  padding: 24px;
+}
+
+.pin-change-modal-actions {
+  margin-top: 24px;
+}
+
+.pin-change-modal-actions .btn-primary {
+  width: 100%;
+}
+
+/* Logout Confirmation Modal */
+.logout-confirm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 20px;
+}
+
+.logout-confirm-modal {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 24px 24px;
+  box-shadow: var(--shadow-lg);
+  animation: modalSlideIn 0.3s ease-out;
+  text-align: center;
+}
+
+.logout-confirm-modal-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
+  font-size: 32px;
+}
+
+.logout-confirm-modal-title {
+  margin: 0 0 12px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.logout-confirm-modal-message {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.logout-confirm-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.logout-confirm-modal-actions .btn-secondary,
+.logout-confirm-modal-actions .btn-logout {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.logout-confirm-modal-actions .btn-logout {
+  background: var(--danger-color);
+  color: white;
+  border: none;
+}
+
+.logout-confirm-modal-actions .btn-logout:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.logout-confirm-modal-actions .btn-logout:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.logout-confirm-modal-actions .btn-logout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Add Money Screen */
@@ -2382,13 +2581,12 @@ background-color: white;  border: 1px solid var(--border-color);
   width: 68px;
   height: 68px;
   border-radius: 12px;
-background-color: white;
+  background-color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 20px;
   padding: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .bank-icon-img {
@@ -2656,6 +2854,118 @@ background-color: white;
   width: 40px;
   height: 40px;
   object-fit: contain;
+}
+
+/* Offers Screen Styles */
+.offers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.offer-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+
+.offer-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.offer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.offer-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+}
+
+.offer-countdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  color: var(--danger-color);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.offer-countdown svg {
+  font-size: 14px;
+}
+
+.offer-description {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.offer-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.offer-contact-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.offers-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.offers-empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.offers-empty-state h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.offers-empty-state p {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+}
+
+.offers-empty-state .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
 }
 
 .selected-mfs-label {

@@ -202,14 +202,9 @@ export default function HomeScreen({ onNavigate, onTabChange }) {
   if (isLoading) {
     return (
       <div className="home-screen">
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          color: 'var(--text-secondary)'
-        }}>
-          Loading...
+        <div className="full-screen-loader">
+          <div className="loader-spinner"></div>
+          <div className="loader-text">Loading...</div>
         </div>
       </div>
     )
@@ -287,9 +282,9 @@ export default function HomeScreen({ onNavigate, onTabChange }) {
                       onNavigate('pay-bill')
                     } else if (action.label === 'Customer\nCare' && onNavigate) {
                       onNavigate('customer-care')
-                    } else if (action.label === 'Offers' && onTabChange) {
+                    } else if (action.label === 'Special\nOffers' && onTabChange) {
                       onTabChange('offers')
-                    } else if (action.label === 'Profile' && onTabChange) {
+                    } else if (action.label === 'My\nProfile' && onTabChange) {
                       onTabChange('profile')
                     }
                   }}

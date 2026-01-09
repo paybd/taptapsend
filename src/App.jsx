@@ -7,14 +7,13 @@ import HomeScreen from './screens/HomeScreen'
 import AddMoneyScreen from './screens/AddMoneyScreen'
 import BkashDepositScreen from './screens/deposit/BkashDepositScreen'
 import BankDepositScreen from './screens/deposit/BankDepositScreen'
-import CardDepositScreen from './screens/deposit/CardDepositScreen'
+import GiftCardDepositScreen from './screens/deposit/CardDepositScreen'
 import MobileBankingScreen from './screens/MobileBankingScreen'
 import BankTransferScreen from './screens/BankTransferScreen'
 import MobileRechargeScreen from './screens/MobileRechargeScreen'
 import PayBillScreen from './screens/PayBillScreen'
 import CustomerCareScreen from './screens/CustomerCareScreen'
 import TransactionsScreen from './screens/TransactionsScreen'
-import ScanScreen from './screens/ScanScreen'
 import OffersScreen from './screens/OffersScreen'
 import ProfileScreen from './screens/ProfileScreen'
 import BottomTabBar from './components/BottomTabBar'
@@ -227,13 +226,13 @@ export default function App() {
   const renderContent = () => {
     // Show deposit screens first
     if (currentScreen === 'bkash-deposit') {
-      return <BkashDepositScreen onBack={handleBack} />
+      return <BkashDepositScreen onBack={handleBack} onSuccess={() => setCurrentScreen(null)} />
     }
     if (currentScreen === 'bank-deposit') {
-      return <BankDepositScreen onBack={handleBack} />
+      return <BankDepositScreen onBack={handleBack} onSuccess={() => setCurrentScreen(null)} />
     }
     if (currentScreen === 'card-deposit') {
-      return <CardDepositScreen onBack={handleBack} />
+      return <GiftCardDepositScreen onBack={handleBack} onSuccess={() => setCurrentScreen(null)} />
     }
     
     // Show Mobile Banking Screen
@@ -272,10 +271,8 @@ export default function App() {
         return <HomeScreen onNavigate={handleNavigate} onTabChange={setActiveTab} />
       case 'transactions':
         return <TransactionsScreen />
-      case 'scan':
-        return <ScanScreen />
       case 'offers':
-        return <OffersScreen />
+        return <OffersScreen onNavigate={handleNavigate} />
       case 'profile':
         return <ProfileScreen onLogout={handleLogout} />
       default:

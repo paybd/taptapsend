@@ -224,3 +224,30 @@ CREATE TRIGGER update_banners_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+-- Create offers table for TapTapSend
+-- This table stores promotional offers and deals
+
+CREATE TABLE IF NOT EXISTS offers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Create index on end_date for filtering active offers
+CREATE INDEX IF NOT EXISTS offers_end_date_idx ON offers(end_date);
+
+-- Create index on created_at for sorting
+CREATE INDEX IF NOT EXISTS offers_created_at_idx ON offers(created_at);
+
+-- Disable Row Level Security (RLS) for this table
+ALTER TABLE offers DISABLE ROW LEVEL SECURITY;
+
+-- Create trigger to automatically update updated_at for offers
+CREATE TRIGGER update_offers_updated_at
+  BEFORE UPDATE ON offers
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+

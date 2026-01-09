@@ -459,7 +459,7 @@ export default function MobileBankingScreen({ onBack }) {
             })()}
             <p className="step-description">Enter the amount</p>
             <div className="form-group">
-              <label className="form-label">Amount ({userCurrency})</label>
+              <label className="form-label">Amount</label>
               <input
                 type="number"
                 className="form-input"
@@ -524,11 +524,11 @@ export default function MobileBankingScreen({ onBack }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Amount:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{transactionAmount.toFixed(2)} {userCurrency}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{transactionAmount.toFixed(2)} Tk</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Commission (2.5%):</span>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{commission.toFixed(2)} {userCurrency}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{commission.toFixed(2)} Tk</span>
                   </div>
                 </div>
               ) : null

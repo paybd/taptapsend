@@ -471,7 +471,7 @@ export default function PayBillScreen({ onBack }) {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Amount ({userCurrency})</label>
+              <label className="form-label">Amount</label>
               <input
                 type="number"
                 className="form-input"
@@ -487,7 +487,7 @@ export default function PayBillScreen({ onBack }) {
                 autoFocus
               />
               <small style={{ color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                Minimum bill amount is 100 {userCurrency}
+                Minimum bill amount is 100
               </small>
             </div>
             <button className="btn-primary" onClick={handleAmountNext}>
@@ -524,15 +524,15 @@ export default function PayBillScreen({ onBack }) {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Amount:</span>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{parseFloat(amount).toFixed(2)} {userCurrency}</span>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{parseFloat(amount).toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Commission (2.5%):</span>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{(parseFloat(amount) * 0.025).toFixed(2)} {userCurrency}</span>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{(parseFloat(amount) * 0.025).toFixed(2)} Tk</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
                 <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>Total:</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--primary)' }}>{(parseFloat(amount) * 1.025).toFixed(2)} {userCurrency}</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--primary)' }}>{(parseFloat(amount) * 1.025).toFixed(2)} Tk</span>
               </div>
             </div>
             <div className="pin-input-container">

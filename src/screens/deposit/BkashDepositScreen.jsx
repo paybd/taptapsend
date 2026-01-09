@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faArrowLeft,
-  faMobileScreenButton,
   faCheckCircle,
   faSpinner
 } from '@fortawesome/free-solid-svg-icons'
 import { supabase } from '../../lib/supabase'
 import '../../index.css'
 
-export default function BkashDepositScreen({ onBack }) {
+export default function BkashDepositScreen({ onBack, onSuccess }) {
   const [amount, setAmount] = useState('')
   const [lastThreeDigits, setLastThreeDigits] = useState('')
   const [bkashAccount, setBkashAccount] = useState(null)
@@ -17,10 +16,57 @@ export default function BkashDepositScreen({ onBack }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [depositCount, setDepositCount] = useState(0)
+  const [minimumAmount, setMinimumAmount] = useState(1)
 
   useEffect(() => {
     loadBkashAccount()
+    loadDepositCount()
   }, [])
+
+  const loadDepositCount = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Count completed bKash deposits
+      const { count, error: countError } = await supabase
+        .from('deposit')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('deposit_type', 'bkash')
+        .eq('status', 'approved')
+
+      if (countError) {
+        console.error('Error loading deposit count:', countError)
+        return
+      }
+
+      const countValue = count || 0
+      setDepositCount(countValue)
+
+      // Calculate minimum amount based on count
+      let minAmount = 1 // Default minimum
+      if (countValue === 0) {
+        minAmount = 1 // Any amount for first deposit
+      } else if (countValue === 1) {
+        minAmount = 5000
+      } else if (countValue === 2) {
+        minAmount = 10000
+      } else if (countValue === 3) {
+        minAmount = 15000
+      } else if (countValue === 4) {
+        minAmount = 20000
+      } else if (countValue >= 5) {
+        minAmount = 30000
+      }
+
+      setMinimumAmount(minAmount)
+    } catch (error) {
+      console.error('Error loading deposit count:', error)
+    }
+  }
 
   const loadBkashAccount = async () => {
     try {
@@ -73,6 +119,18 @@ export default function BkashDepositScreen({ onBack }) {
     const depositAmount = parseFloat(amount)
     if (isNaN(depositAmount) || depositAmount <= 0) {
       setError('Please enter a valid amount')
+      return
+    }
+
+    // Don't allow float values
+    if (depositAmount % 1 !== 0) {
+      setError('Amount must be a whole number')
+      return
+    }
+
+    // Check minimum deposit limit
+    if (depositAmount < minimumAmount) {
+      setError(`Minimum deposit amount is ${minimumAmount.toLocaleString()} BDT based on your previous deposits`)
       return
     }
 
@@ -193,10 +251,17 @@ export default function BkashDepositScreen({ onBack }) {
 
       setSuccess(true)
       
-      // Navigate to home screen after 2 seconds
+      // Set success message in localStorage for toast notification
+      localStorage.setItem('transactionSuccess', 'bKash deposit successful! Your balance has been updated.')
+      
+      // Navigate to home screen after 1 second
       setTimeout(() => {
-        onBack()
-      }, 2000)
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          onBack()
+        }
+      }, 1000)
     } catch (error) {
       console.error('Error processing deposit:', error)
       setError(error.message || 'Failed to process deposit. Please try again.')
@@ -218,8 +283,13 @@ export default function BkashDepositScreen({ onBack }) {
 
       {/* Content */}
       <div className="deposit-content">
-        <div className="deposit-icon-large">
-          <FontAwesomeIcon icon={faMobileScreenButton} />
+        <div className="deposit-icon-large" style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <img src="/icons/bkash.png" alt="bKash" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
 
         {isLoading ? (
@@ -232,7 +302,7 @@ export default function BkashDepositScreen({ onBack }) {
             <div className="bkash-account-display">
               <div className="account-label">Send money to this bKash number:</div>
               <div className="account-number">{bkashAccount.account_number}</div>
-              <div className="account-name">{bkashAccount.account_name || 'TapTapSend Account'}</div>
+              <div className="account-name">{bkashAccount.account_name || 'Mcash Remit Bkash Account'}</div>
             </div>
             
             <form onSubmit={handleSubmit} className="deposit-form">
@@ -253,14 +323,30 @@ export default function BkashDepositScreen({ onBack }) {
                 <input
                   type="number"
                   className="form-input"
-                  placeholder="0.00"
+                  placeholder="0"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min="1"
-                  step="0.01"
+                  onChange={(e) => {
+                    const value = e.target.value
+                    // Only allow whole numbers
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setAmount(value)
+                    }
+                  }}
+                  min={minimumAmount}
+                  step="1"
                   required
                   disabled={isSubmitting}
                 />
+                {minimumAmount > 1 && (
+                  <div className="form-hint" style={{ 
+                    marginTop: '8px', 
+                    fontSize: '13px', 
+                    color: 'var(--text-secondary)',
+                    fontWeight: '500'
+                  }}>
+                    Minimum deposit: {minimumAmount.toLocaleString()} BDT
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

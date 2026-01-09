@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { faLock, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import '../../index.css'
 
 export default function Step3PIN({ formData, updateFormData, onNext, onBack }) {
   const [pin, setPin] = useState(['', '', '', ''])
   const [confirmPin, setConfirmPin] = useState(['', '', '', ''])
   const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handlePinChange = (index, value, isConfirm = false) => {
     if (value.length > 1) return
@@ -74,10 +75,21 @@ export default function Step3PIN({ formData, updateFormData, onNext, onBack }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleNext = () => {
-    if (validate()) {
-      updateFormData('pin', pin.join(''))
-      onNext()
+  const handleNext = async () => {
+    if (validate() && !isSubmitting) {
+      setIsSubmitting(true)
+      try {
+        updateFormData('pin', pin.join(''))
+        await onNext()
+        // If onNext succeeds, the step will change and component will unmount
+        // If it fails, reset submitting state after a short delay to allow error to display
+        setTimeout(() => {
+          setIsSubmitting(false)
+        }, 100)
+      } catch (error) {
+        // Error handling is done in parent component
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -141,9 +153,16 @@ export default function Step3PIN({ formData, updateFormData, onNext, onBack }) {
         <button 
           className="btn-primary" 
           onClick={handleNext}
-          disabled={pin.join('').length !== 4 || confirmPin.join('').length !== 4}
+          disabled={pin.join('').length !== 4 || confirmPin.join('').length !== 4 || isSubmitting}
         >
-          Continue
+          {isSubmitting ? (
+            <>
+              <FontAwesomeIcon icon={faSpinner} className="fa-spin" style={{ marginRight: '8px' }} />
+              Processing...
+            </>
+          ) : (
+            'Continue'
+          )}
         </button>
       </div>
     </div>

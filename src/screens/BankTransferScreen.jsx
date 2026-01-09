@@ -498,7 +498,7 @@ export default function BankTransferScreen({ onBack }) {
             )}
             <p className="step-description">Enter transfer amount</p>
             <div className="form-group">
-              <label className="form-label">Amount ({userCurrency})</label>
+              <label className="form-label">Amount</label>
               <input
                 type="number"
                 className="form-input"
@@ -518,7 +518,7 @@ export default function BankTransferScreen({ onBack }) {
                 autoFocus
               />
               <small style={{ color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                Minimum: {selectedBank.supportsBkash ? '5,000' : '25,000'} {userCurrency}
+                Minimum: {selectedBank.supportsBkash ? '5,000' : '25,000'} Tk
               </small>
             </div>
             <button className="btn-primary" onClick={handleAmountNext}>
@@ -564,11 +564,11 @@ export default function BankTransferScreen({ onBack }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Amount:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{transferAmount} {userCurrency}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{transferAmount} Tk</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Commission (2.5%):</span>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{commission.toFixed(2)} {userCurrency}</span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{commission.toFixed(2)} Tk</span>
                   </div>
                 </div>
               )

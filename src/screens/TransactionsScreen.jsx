@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
-  faWallet,
-  faBuildingColumns,
-  faMobileScreenButton,
-  faBolt,
-  faCreditCard,
-  faPaperPlane,
   faSpinner,
   faCircleCheck,
   faClock,
   faXmarkCircle,
   faXmark,
+  faMobileScreenButton,
   faIdCard,
+  faBuildingColumns,
   faPhone,
-  faMoneyBillWave
+  faBolt
 } from '@fortawesome/free-solid-svg-icons'
 import { supabase } from '../lib/supabase'
 import { getCurrencyForCountry } from '../lib/currencyMapping'
@@ -85,7 +81,11 @@ export default function TransactionsScreen() {
         ...(depositsData || []).map(deposit => ({
           ...deposit,
           itemType: 'deposit',
-          displayType: deposit.deposit_type === 'bkash' ? 'bKash Deposit' : 'Bank Deposit',
+          displayType: deposit.deposit_type === 'bkash' 
+            ? 'bKash Deposit' 
+            : deposit.deposit_type === 'gift_card'
+            ? 'Gift Card Deposit'
+            : 'Bank Deposit',
           amount: deposit.amount,
           status: deposit.status,
           createdAt: deposit.created_at
@@ -126,22 +126,25 @@ export default function TransactionsScreen() {
   const getTransactionIcon = (item) => {
     if (item.itemType === 'deposit') {
       if (item.deposit_type === 'bkash') {
-        return faMobileScreenButton
+        return '/icons/bkash.png'
       }
-      return faBuildingColumns
+      if (item.deposit_type === 'gift_card') {
+        return '/icons/payment-method.png'
+      }
+      return '/icons/bank.png'
     }
 
     switch (item.type) {
       case 'mobile_banking':
-        return faPaperPlane
+        return '/icons/mobile-payment.png'
       case 'bank_transfer':
-        return faBuildingColumns
+        return '/icons/bank.png'
       case 'mobile_recharge':
-        return faMobileScreenButton
+        return '/icons/recharge.png'
       case 'pay_bill':
-        return faBolt
+        return '/icons/payment-method.png'
       default:
-        return faCreditCard
+        return '/icons/wallet.png'
     }
   }
 
@@ -205,16 +208,9 @@ export default function TransactionsScreen() {
 
   if (isLoading) {
     return (
-      <div className="screen-content">
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          color: 'var(--text-secondary)'
-        }}>
-          <FontAwesomeIcon icon={faSpinner} className="fa-spin" style={{ fontSize: '24px' }} />
-        </div>
+      <div className="full-screen-loader">
+        <div className="loader-spinner"></div>
+        <div className="loader-text">Loading transactions...</div>
       </div>
     )
   }
@@ -395,12 +391,11 @@ export default function TransactionsScreen() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '22px',
                   flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(22, 101, 52, 0.2)'
+                  boxShadow: '0 2px 8px rgba(22, 101, 52, 0.2)',
+                  padding: '8px'
                 }}>
-                  <FontAwesomeIcon icon={icon} />
+                  <img src={icon} alt={item.displayType} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
 
                 {/* Details */}
@@ -487,10 +482,10 @@ export default function TransactionsScreen() {
                     alignItems: 'flex-end'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {isDeposit ? '+' : '-'}{parseFloat(item.amount).toFixed(2)} {isDeposit && item.deposit_type === 'bank' ? userCurrency : 'BDT'}
+                      {isDeposit ? '+' : '-'}{parseFloat(item.amount).toFixed(2)} {isDeposit && (item.deposit_type === 'bank' || item.deposit_type === 'gift_card') ? userCurrency : 'BDT'}
                     </div>
-                    {/* Show amount_to_add for bank deposits if available */}
-                    {isDeposit && item.deposit_type === 'bank' && item.amount_to_add && (
+                    {/* Show amount_to_add for bank and gift card deposits if available */}
+                    {isDeposit && (item.deposit_type === 'bank' || item.deposit_type === 'gift_card') && item.amount_to_add && (
                       <div style={{ 
                         fontSize: '12px', 
                         color: 'var(--text-secondary)',
@@ -612,10 +607,9 @@ export default function TransactionsScreen() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '20px'
+                  padding: '8px'
                 }}>
-                  <FontAwesomeIcon icon={getTransactionIcon(selectedItem)} />
+                  <img src={getTransactionIcon(selectedItem)} alt={selectedItem.displayType} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <div>
                   <h3 style={{
@@ -680,8 +674,8 @@ export default function TransactionsScreen() {
                   gap: '8px'
                 }}>
                   {selectedItem.itemType === 'deposit' ? '+' : '-'}
-                  {parseFloat(selectedItem.amount).toFixed(2)} {selectedItem.itemType === 'deposit' && selectedItem.deposit_type === 'bank' ? userCurrency : 'BDT'}
-                  {selectedItem.itemType === 'deposit' && selectedItem.deposit_type === 'bank' && selectedItem.amount_to_add && (
+                  {parseFloat(selectedItem.amount).toFixed(2)} {selectedItem.itemType === 'deposit' && (selectedItem.deposit_type === 'bank' || selectedItem.deposit_type === 'gift_card') ? userCurrency : 'BDT'}
+                  {selectedItem.itemType === 'deposit' && (selectedItem.deposit_type === 'bank' || selectedItem.deposit_type === 'gift_card') && selectedItem.amount_to_add && (
                     <span style={{
                       fontSize: '14px',
                       color: 'var(--text-secondary)',

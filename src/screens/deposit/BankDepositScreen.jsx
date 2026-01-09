@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faArrowLeft,
-  faBuildingColumns,
   faCheckCircle,
   faSpinner,
   faImage,
@@ -12,7 +11,7 @@ import { supabase } from '../../lib/supabase'
 import { getCurrencyForCountry } from '../../lib/currencyMapping'
 import '../../index.css'
 
-export default function BankDepositScreen({ onBack }) {
+export default function BankDepositScreen({ onBack, onSuccess }) {
   const [amount, setAmount] = useState('')
   const [selectedBankId, setSelectedBankId] = useState('')
   const [banks, setBanks] = useState([])
@@ -24,10 +23,13 @@ export default function BankDepositScreen({ onBack }) {
   const [success, setSuccess] = useState(false)
   const [userCountryCode, setUserCountryCode] = useState(null)
   const [userCurrency, setUserCurrency] = useState('BDT')
+  const [depositCount, setDepositCount] = useState(0)
+  const [minimumAmount, setMinimumAmount] = useState(100)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
     loadUserCountry()
+    loadDepositCount()
   }, [])
 
   useEffect(() => {
@@ -62,6 +64,46 @@ export default function BankDepositScreen({ onBack }) {
       }
     } catch (error) {
       console.error('Error loading user country:', error)
+    }
+  }
+
+  const loadDepositCount = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Count approved bank deposits
+      const { count, error: countError } = await supabase
+        .from('deposit')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('deposit_type', 'bank')
+        .eq('status', 'approved')
+
+      if (countError) {
+        console.error('Error loading deposit count:', countError)
+        return
+      }
+
+      const countValue = count || 0
+      setDepositCount(countValue)
+
+      // Calculate minimum amount based on count
+      let minAmount = 100 // Default minimum
+      if (countValue === 0) {
+        minAmount = 100
+      } else if (countValue === 1) {
+        minAmount = 500
+      } else if (countValue === 2) {
+        minAmount = 1000
+      } else if (countValue >= 3) {
+        minAmount = 2000
+      }
+
+      setMinimumAmount(minAmount)
+    } catch (error) {
+      console.error('Error loading deposit count:', error)
     }
   }
 
@@ -184,6 +226,18 @@ export default function BankDepositScreen({ onBack }) {
       return
     }
 
+    // Don't allow float values
+    if (depositAmount % 1 !== 0) {
+      setError('Amount must be a whole number')
+      return
+    }
+
+    // Check minimum deposit limit
+    if (depositAmount < minimumAmount) {
+      setError(`Minimum deposit amount is ${minimumAmount.toLocaleString()} ${userCurrency} based on your previous deposits`)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -250,10 +304,17 @@ export default function BankDepositScreen({ onBack }) {
 
       setSuccess(true)
       
-      // Navigate to home screen after 2 seconds
+      // Set success message in localStorage for toast notification
+      localStorage.setItem('transactionSuccess', 'Bank deposit request submitted successfully! Your receipt has been uploaded and is pending review.')
+      
+      // Navigate to home screen after 1 second
       setTimeout(() => {
-        onBack()
-      }, 2000)
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          onBack()
+        }
+      }, 1000)
     } catch (error) {
       console.error('Error processing deposit:', error)
       setError(error.message || 'Failed to process deposit. Please try again.')
@@ -275,9 +336,7 @@ export default function BankDepositScreen({ onBack }) {
 
       {/* Content */}
       <div className="deposit-content">
-        <div className="deposit-icon-large">
-          <FontAwesomeIcon icon={faBuildingColumns} />
-        </div>
+      
 
         {isLoading ? (
           <div className="loading-container">
@@ -298,13 +357,11 @@ export default function BankDepositScreen({ onBack }) {
                     disabled={isSubmitting}
                   >
                     <div className="bank-button-icon">
-                      <FontAwesomeIcon icon={faBuildingColumns} />
+                      <img src="/icons/bank.png" alt="Bank" className="bank-icon-img" />
                     </div>
                     <div className="bank-button-content">
                       <div className="bank-button-name">{bank.account_name || bank.account_number}</div>
-                      {bank.country && (
-                        <div className="bank-button-country">{bank.country}</div>
-                      )}
+                     
                     </div>
                   </button>
                 ))}
@@ -325,10 +382,7 @@ export default function BankDepositScreen({ onBack }) {
                   <span className="bank-info-label">IBAN:</span>
                   <span className="bank-info-value">{selectedBank.iban || 'N/A'}</span>
                 </div>
-                <div className="bank-info-row">
-                  <span className="bank-info-label">Country:</span>
-                  <span className="bank-info-value">{selectedBank.country || 'N/A'}</span>
-                </div>
+              
               </div>
             )}
 
@@ -350,14 +404,28 @@ export default function BankDepositScreen({ onBack }) {
                 <input
                   type="number"
                   className="form-input"
-                  placeholder="0.00"
+                  placeholder="0"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min="1"
-                  step="0.01"
+                  onChange={(e) => {
+                    const value = e.target.value
+                    // Only allow whole numbers
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setAmount(value)
+                    }
+                  }}
+                  min={minimumAmount}
+                  step="1"
                   required
                   disabled={isSubmitting}
                 />
+                <div className="form-hint" style={{ 
+                  marginTop: '8px', 
+                  fontSize: '13px', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500'
+                }}>
+                  Minimum deposit: {minimumAmount.toLocaleString()} {userCurrency}
+                </div>
               </div>
 
               <div className="form-group">

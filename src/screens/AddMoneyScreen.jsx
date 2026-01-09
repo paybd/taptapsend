@@ -70,7 +70,7 @@ export default function AddMoneyScreen({ onBack, onNavigate }) {
 
   const depositOptions = [
     {
-      icon: '/icons/mobile-payment.png',
+      icon: '/icons/bkash.png',
       label: 'bKash Deposit',
       description: 'Add money from bKash account',
       color: '#166534',
@@ -85,8 +85,8 @@ export default function AddMoneyScreen({ onBack, onNavigate }) {
     },
     {
       icon: '/icons/payment-method.png',
-      label: 'Card Deposit',
-      description: 'Add money using debit/credit card',
+      label: 'Gift Card Deposit',
+      description: 'Add money using gift card',
       color: '#166534',
       screen: 'card-deposit'
     }
