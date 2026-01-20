@@ -94,7 +94,7 @@ export default function PlayStoreScreen({ onClose }) {
     }
   }, [])
 
-  const simulateDownload = () => {
+  const simulateDownload = async () => {
     setShowProgress(true)
     setProgress(0)
     setProgressPhase('downloading')
@@ -109,9 +109,30 @@ export default function PlayStoreScreen({ onClose }) {
         setProgress(100)
         clearInterval(progressIntervalRef.current)
         
-        // After download completes, start installation
-        setTimeout(() => {
-          simulateInstallation()
+        // After download completes, hide progress and show native install prompt
+        setTimeout(async () => {
+          setShowProgress(false)
+          
+          // Show the native install prompt
+          if (deferredPrompt) {
+            deferredPrompt.prompt()
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice
+            
+            if (outcome === 'accepted') {
+              // User accepted, now show installation progress
+              simulateInstallation()
+            } else {
+              // User dismissed, reset state
+              console.log('User dismissed the install prompt')
+              setDeferredPrompt(null)
+              setIsInstallable(false)
+            }
+          } else {
+            // No deferred prompt available, just mark as installed
+            setIsInstalled(true)
+          }
         }, 500)
       } else {
         setProgress(Math.min(currentProgress, 99))
@@ -120,6 +141,7 @@ export default function PlayStoreScreen({ onClose }) {
   }
 
   const simulateInstallation = () => {
+    setShowProgress(true)
     setProgress(0)
     setProgressPhase('installing')
     
@@ -133,24 +155,12 @@ export default function PlayStoreScreen({ onClose }) {
         setProgress(100)
         clearInterval(progressIntervalRef.current)
         
-        // After installation completes, trigger actual PWA install or mark as installed
+        // After installation completes, mark as installed
         setTimeout(() => {
           setShowProgress(false)
           setIsInstalled(true)
-          
-          // If we have a deferred prompt, show it now
-          if (deferredPrompt) {
-            deferredPrompt.prompt()
-            deferredPrompt.userChoice.then(({ outcome }) => {
-              if (outcome === 'accepted') {
-                console.log('User accepted the install prompt')
-              } else {
-                console.log('User dismissed the install prompt')
-              }
-              setDeferredPrompt(null)
-              setIsInstallable(false)
-            })
-          }
+          setDeferredPrompt(null)
+          setIsInstallable(false)
         }, 500)
       } else {
         setProgress(Math.min(currentProgress, 99))
@@ -161,6 +171,12 @@ export default function PlayStoreScreen({ onClose }) {
   const handleInstallClick = async () => {
     if (isInstalled) {
       alert('TapTapSend is already installed on your device!')
+      return
+    }
+
+    if (!deferredPrompt && !isIphone) {
+      // If no deferred prompt but not iPhone, show message
+      alert('Installation is not available. Please use your browser\'s install option.')
       return
     }
 
