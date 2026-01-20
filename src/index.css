@@ -721,13 +721,13 @@ body {
 .logo-circle {
   width: 100px;
   height: 100px;
-  background: var(--landing-green-light);
+  background: transparent;
   border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.2);
+
 }
 
 .app-title {

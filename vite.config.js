@@ -10,9 +10,9 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'TapTapSend',
-        short_name: 'TapTapSend',
-        description: 'TapTapSend PWA built with Vite + React',
+        name: 'Mcash Remit',
+        short_name: 'Mcash Remit',
+        description: 'Mcash Remit PWA built with Vite + React',
         theme_color: '#166534',
         background_color: '#f8fafc',
         display: 'standalone',

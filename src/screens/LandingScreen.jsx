@@ -120,18 +120,7 @@ export default function LandingScreen({ onLogin, onSignUp, onGoogleLogin }) {
       <div className="landing-header">
         <div className="logo-container">
           <div className="logo-circle">
-            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Bird body (white) */}
-              <ellipse cx="40" cy="45" rx="20" ry="25" fill="white"/>
-              {/* Bird head (red) */}
-              <circle cx="40" cy="30" r="12" fill="#ef4444"/>
-              {/* Bird crest (red) */}
-              <path d="M 40 20 L 35 15 L 40 18 L 45 15 Z" fill="#ef4444"/>
-              {/* Wing/Tail (dark green) */}
-              <ellipse cx="50" cy="50" rx="15" ry="20" fill="#166534"/>
-              {/* Eye */}
-              <circle cx="43" cy="28" r="2" fill="white"/>
-            </svg>
+            <img src="/icons/mcash.png" alt="Mcash Remit" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
           </div>
         </div>
         <h1 className="app-title">Mcash Remit</h1>
