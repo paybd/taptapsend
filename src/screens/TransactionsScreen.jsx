@@ -10,7 +10,8 @@ import {
   faIdCard,
   faBuildingColumns,
   faPhone,
-  faBolt
+  faBolt,
+  faCreditCard
 } from '@fortawesome/free-solid-svg-icons'
 import { supabase } from '../lib/supabase'
 import { getCurrencyForCountry } from '../lib/currencyMapping'

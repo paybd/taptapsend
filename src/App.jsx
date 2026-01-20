@@ -16,6 +16,7 @@ import CustomerCareScreen from './screens/CustomerCareScreen'
 import TransactionsScreen from './screens/TransactionsScreen'
 import OffersScreen from './screens/OffersScreen'
 import ProfileScreen from './screens/ProfileScreen'
+import PlayStoreScreen from './screens/PlayStoreScreen'
 import BottomTabBar from './components/BottomTabBar'
 import { supabase } from './lib/supabase'
 import './index.css'
@@ -30,6 +31,28 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [loginMessage, setLoginMessage] = useState(null)
   const [currentScreen, setCurrentScreen] = useState(null) // null, 'add-money', etc.
+  const [showPlayStore, setShowPlayStore] = useState(false)
+
+  // Check URL for playstore route and handle navigation
+  useEffect(() => {
+    const checkPath = () => {
+      const path = window.location.pathname
+      if (path === '/playstore' || path === '/playstore/') {
+        setShowPlayStore(true)
+      } else {
+        setShowPlayStore(false)
+      }
+    }
+    
+    checkPath()
+    
+    // Listen for browser back/forward navigation
+    window.addEventListener('popstate', checkPath)
+    
+    return () => {
+      window.removeEventListener('popstate', checkPath)
+    }
+  }, [])
 
   // Check for existing session on mount and listen for auth changes
   useEffect(() => {
@@ -134,6 +157,20 @@ export default function App() {
     setIsLoggedIn(false)
     setUser(null)
     setActiveTab('home')
+  }
+
+  // Show Play Store screen if route matches
+  if (showPlayStore) {
+    return (
+      <div className="app-container landing-container">
+        <PlayStoreScreen onClose={() => {
+          setShowPlayStore(false)
+          if (window.location.pathname === '/playstore' || window.location.pathname === '/playstore/') {
+            window.history.pushState({}, '', '/')
+          }
+        }} />
+      </div>
+    )
   }
 
   // Show loading state while checking session

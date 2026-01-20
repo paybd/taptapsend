@@ -123,10 +123,37 @@ export default function HomeScreen({ onNavigate, onTabChange }) {
   }
 
   const handleBalanceToggle = async () => {
-    // Toggle balance visibility
-    setBalanceVisible(!balanceVisible)
-    // Refresh balance data when toggling
-    await loadUserData(true)
+    // If hiding, just hide immediately
+    if (balanceVisible) {
+      setBalanceVisible(false)
+      return
+    }
+    
+    // If showing, fetch latest balance first, then unhide
+    setIsRefreshing(true)
+    try {
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      
+      if (currentUser) {
+        // Load latest balance from profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('balance')
+          .eq('id', currentUser.id)
+          .single()
+
+        if (!profileError && profileData) {
+          setBalance(parseFloat(profileData.balance) || 0)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error)
+    } finally {
+      setIsRefreshing(false)
+      // Unhide balance after fetching
+      setBalanceVisible(true)
+    }
   }
 
   const getAvatarInitials = () => {
