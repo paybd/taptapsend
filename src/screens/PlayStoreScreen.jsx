@@ -1,12 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faStar, faShare, faBookmark, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { faStar, faShare, faBookmark, faChevronRight, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import '../index.css'
 
 export default function PlayStoreScreen({ onClose }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [isInstalled, setIsInstalled] = useState(false)
   const [isInstallable, setIsInstallable] = useState(false)
+  const [showProgress, setShowProgress] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [progressPhase, setProgressPhase] = useState('downloading') // 'downloading' or 'installing'
+  const [isIphone, setIsIphone] = useState(false)
+  const progressIntervalRef = useRef(null)
   
   const screenshots = [
     '/icons/wallet.png',
@@ -52,14 +57,19 @@ export default function PlayStoreScreen({ onClose }) {
     { name: 'bKash Agent', developer: 'bKash Limited', rating: 4.2, icon: '/icons/wallet.png' }
   ]
 
-  // Check if app is already installed
+  // Check if app is already installed and detect iPhone
   useEffect(() => {
+    // Detect iPhone
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    setIsIphone(isIOS)
+
     // Check if running as standalone (installed)
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
       setIsInstalled(true)
     }
 
-    // Listen for beforeinstallprompt event
+    // Listen for beforeinstallprompt event (not available on iOS)
     const handleBeforeInstallPrompt = (e) => {
       // Prevent the default install prompt
       e.preventDefault()
@@ -84,33 +94,88 @@ export default function PlayStoreScreen({ onClose }) {
     }
   }, [])
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      // If no deferred prompt, check if we can show a message
-      if (isInstalled) {
-        alert('TapTapSend is already installed on your device!')
+  const simulateDownload = () => {
+    setShowProgress(true)
+    setProgress(0)
+    setProgressPhase('downloading')
+    
+    // Simulate download progress
+    let currentProgress = 0
+    progressIntervalRef.current = setInterval(() => {
+      currentProgress += Math.random() * 15 + 5 // Random increment between 5-20%
+      
+      if (currentProgress >= 100) {
+        currentProgress = 100
+        setProgress(100)
+        clearInterval(progressIntervalRef.current)
+        
+        // After download completes, start installation
+        setTimeout(() => {
+          simulateInstallation()
+        }, 500)
       } else {
-        alert('Installation is not available. Please use your browser\'s install option.')
+        setProgress(Math.min(currentProgress, 99))
       }
+    }, 200) // Update every 200ms
+  }
+
+  const simulateInstallation = () => {
+    setProgress(0)
+    setProgressPhase('installing')
+    
+    // Simulate installation progress
+    let currentProgress = 0
+    progressIntervalRef.current = setInterval(() => {
+      currentProgress += Math.random() * 20 + 10 // Random increment between 10-30%
+      
+      if (currentProgress >= 100) {
+        currentProgress = 100
+        setProgress(100)
+        clearInterval(progressIntervalRef.current)
+        
+        // After installation completes, trigger actual PWA install or mark as installed
+        setTimeout(() => {
+          setShowProgress(false)
+          setIsInstalled(true)
+          
+          // If we have a deferred prompt, show it now
+          if (deferredPrompt) {
+            deferredPrompt.prompt()
+            deferredPrompt.userChoice.then(({ outcome }) => {
+              if (outcome === 'accepted') {
+                console.log('User accepted the install prompt')
+              } else {
+                console.log('User dismissed the install prompt')
+              }
+              setDeferredPrompt(null)
+              setIsInstallable(false)
+            })
+          }
+        }, 500)
+      } else {
+        setProgress(Math.min(currentProgress, 99))
+      }
+    }, 150) // Update every 150ms
+  }
+
+  const handleInstallClick = async () => {
+    if (isInstalled) {
+      alert('TapTapSend is already installed on your device!')
       return
     }
 
-    // Show the install prompt
-    deferredPrompt.prompt()
-
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt')
-    } else {
-      console.log('User dismissed the install prompt')
-    }
-
-    // Clear the deferred prompt
-    setDeferredPrompt(null)
-    setIsInstallable(false)
+    // Start the download simulation
+    simulateDownload()
   }
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -182,9 +247,18 @@ export default function PlayStoreScreen({ onClose }) {
             <button 
               className="playstore-install-btn"
               onClick={handleInstallClick}
-              disabled={isInstalled && !isInstallable}
+              disabled={isInstalled || showProgress || isIphone}
             >
-              {isInstalled ? 'Installed' : 'Install'}
+              {showProgress ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: '8px' }} />
+                  {progressPhase === 'downloading' ? 'Downloading...' : 'Installing...'}
+                </>
+              ) : isInstalled ? (
+                'Installed'
+              ) : (
+                'Install'
+              )}
             </button>
             <button className="playstore-action-btn">
               <FontAwesomeIcon icon={faShare} />
@@ -193,7 +267,13 @@ export default function PlayStoreScreen({ onClose }) {
               <FontAwesomeIcon icon={faBookmark} />
             </button>
           </div>
-          <p className="playstore-device-info">This app is available for all of your devices</p>
+          {isIphone ? (
+            <p className="playstore-device-info playstore-device-incompatible">
+              This device is not compatible with this app
+            </p>
+          ) : (
+            <p className="playstore-device-info">This app is available for all of your devices</p>
+          )}
         </div>
 
         {/* Screenshots Gallery */}
@@ -358,6 +438,32 @@ export default function PlayStoreScreen({ onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Download/Install Progress Notification */}
+      {showProgress && (
+        <div className="playstore-download-notification">
+          <div className="playstore-download-notification-content">
+            <div className="playstore-download-icon">
+              <img src="/icons/wallet.png" alt="TapTapSend" />
+            </div>
+            <div className="playstore-download-info">
+              <div className="playstore-download-header">
+                <span className="playstore-download-app-name">TapTapSend</span>
+                <span className="playstore-download-percentage">{Math.round(progress)}%</span>
+              </div>
+              <div className="playstore-download-progress-bar">
+                <div 
+                  className="playstore-download-progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="playstore-download-status">
+                {progressPhase === 'downloading' ? 'Downloading...' : 'Installing...'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="playstore-footer">

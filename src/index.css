@@ -3368,6 +3368,104 @@ background-color: white;  border: 1px solid var(--border-color);
   opacity: 0.7;
 }
 
+/* Download/Install Progress Notification */
+.playstore-download-notification {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e8eaed;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  animation: playstore-download-slide-up 0.3s ease-out;
+  padding: 12px 16px;
+}
+
+@keyframes playstore-download-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.playstore-download-notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.playstore-download-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.playstore-download-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playstore-download-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.playstore-download-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.playstore-download-app-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202124;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playstore-download-percentage {
+  font-size: 14px;
+  font-weight: 500;
+  color: #5f6368;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.playstore-download-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e8eaed;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.playstore-download-progress-fill {
+  height: 100%;
+  background: #34a853;
+  border-radius: 2px;
+  transition: width 0.2s ease-out;
+}
+
+.playstore-download-status {
+  font-size: 12px;
+  color: #5f6368;
+  display: block;
+}
+
 .playstore-action-btn {
   width: 48px;
   height: 48px;
@@ -3390,6 +3488,11 @@ background-color: white;  border: 1px solid var(--border-color);
   font-size: 12px;
   color: #5f6368;
   margin: 0;
+}
+
+.playstore-device-info.playstore-device-incompatible {
+  color: #ea4335;
+  font-weight: 500;
 }
 
 .playstore-screenshots {
