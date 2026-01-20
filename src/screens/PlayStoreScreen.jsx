@@ -64,18 +64,40 @@ export default function PlayStoreScreen({ onClose }) {
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     setIsIphone(isIOS)
 
-    // Check if running as standalone (installed)
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    // Enhanced PWA installation detection
+    const checkIfPWAInstalled = () => {
+      // Method 1: Check display mode (Android/Chrome/Edge)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      
+      // Method 2: Check iOS standalone mode
+      const isIOSStandalone = window.navigator.standalone === true
+      
+      // Method 3: Check fullscreen mode
+      const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches
+      
+      // Method 4: Check minimal-ui mode (some browsers)
+      const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches
+      
+      // If any indicator is true, PWA is installed
+      return isStandalone || isIOSStandalone || isFullscreen || isMinimalUI
+    }
+
+    // Check if PWA is already installed
+    if (checkIfPWAInstalled()) {
       setIsInstalled(true)
+      setIsInstallable(false)
     }
 
     // Listen for beforeinstallprompt event (not available on iOS)
+    // This event only fires if the app is NOT already installed
     const handleBeforeInstallPrompt = (e) => {
       // Prevent the default install prompt
       e.preventDefault()
       // Store the event for later use
       setDeferredPrompt(e)
       setIsInstallable(true)
+      // If we get this event, app is not installed yet
+      setIsInstalled(false)
     }
 
     // Listen for app installed event
