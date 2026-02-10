@@ -596,7 +596,7 @@ export default function PlayStoreScreen({ onClose }) {
         <div className="playstore-download-notification">
           <div className="playstore-download-notification-content">
             <div className="playstore-download-icon">
-              <img src="/icons/wallet.png" alt="Mcash Remit" />
+              <img src="/icons/mcash.png" alt="Mcash Remit" />
             </div>
             <div className="playstore-download-info">
               <div className="playstore-download-header">
