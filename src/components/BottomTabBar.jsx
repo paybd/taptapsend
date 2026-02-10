@@ -4,7 +4,7 @@ export default function BottomTabBar({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'home', label: 'Home', icon: '/icons/home.png' },
     { id: 'transactions', label: 'Transactions', icon: '/icons/transactions.png' },
-    { id: 'offers', label: 'Offers', icon: '/icons/lottery.png' },
+    { id: 'offers', label: 'Offers', icon: '/icons/money-bag.png' },
     { id: 'profile', label: 'Profile', icon: '/icons/profile.png' },
   ]
 

@@ -186,7 +186,7 @@ export default function HomeScreen({ onNavigate, onTabChange }) {
     { icon: '/icons/telephone-call.png', label: 'Mobile\nRecharge', color: '#166534' },
     { icon: '/icons/payment-method.png', label: 'Pay\nBill', color: '#166534' },
     { icon: '/icons/support.png', label: 'Customer\nCare', color: '#166534' },
-    { icon: '/icons/lottery.png', label: 'Special\nOffers', color: '#166534' },
+    { icon: '/icons/money-bag.png', label: 'Special\nOffers', color: '#166534' },
     { icon: '/icons/profile.png', label: 'My\nProfile', color: '#166534' },
   ]
 
